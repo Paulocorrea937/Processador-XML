@@ -43,8 +43,7 @@
   <div class="card">
     <p>Selecione um ou mais arquivos .xml de NFe:</p>
 
-    <!-- ESSA É A LINHA DO ERRO — ELA PRECISA ESTAR ASSIM -->
-    <input type="file" id="xmlFiles" accept=".xml" multiple />
+    <input type="file" id="xmlFiles" accept=".xml" multiple="multiple" />
 
     <br><br>
     <button id="btnProcessar">Processar XMLs e gerar XLSX</button>
