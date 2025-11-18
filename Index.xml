@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Processador de XML NFe - XLSX</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 20px auto;
+    }
+    h1 {
+      font-size: 22px;
+      margin-bottom: 10px;
+    }
+    .card {
+      border: 1px solid #ccc;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+    }
+    button {
+      padding: 8px 14px;
+      cursor: pointer;
+    }
+    .log {
+      font-size: 13px;
+      white-space: pre-wrap;
+      background: #f7f7f7;
+      padding: 10px;
+      border-radius: 4px;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+  </style>
+
+  <!-- Biblioteca para gerar XLSX -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+  <h1>Processador de XML NFe (versão Web - XLSX)</h1>
+
+  <div class="card">
+    <p>Selecione um ou mais arquivos <strong>.xml</strong> de NF-e:</p>
+    <input type="file" id="xmlFiles" accept=".xml" multiple />
+    <br><br>
+    <button id="btnProcessar">Processar XMLs e gerar XLSX</button>
+  </div>
+
+  <div class="card">
+    <h3>Status / Log</h3>
+    <div id="log" class="log"></div>
+  </div>
+
+  <script>
+    const logEl = document.getElementById('log');
+    const btnProcessar = document.getElementById('btnProcessar');
+    const inputFiles = document.getElementById('xmlFiles');
+
+    function log(msg) {
+      logEl.textContent += msg + "\n";
+    }
+
+    function limparLog() {
+      logEl.textContent = "";
+    }
+
+    // Função pra pegar texto de um nó filho (sem se preocupar com namespace)
+    function getText(parent, tagName) {
+      if (!parent) return "";
+      const els = parent.getElementsByTagName(tagName);
+      if (els.length === 0) return "";
+      return (els[0].textContent || "").trim();
+    }
+
+    // Adicionar ao resumo (similar ao teu dictResumo no VBA)
+    function adicionarAoResumo(mapResumo, codProd, nomeProd, unidade, qtd) {
+      const chave = codProd + "|" + unidade;
+      if (mapResumo.has(chave)) {
+        const item = mapResumo.get(chave);
+        item.quantidade += qtd;
+      } else {
+        mapResumo.set(chave, {
+          codProd,
+          nomeProd,
+          unidade,
+          quantidade: qtd
+        });
+      }
+    }
+
+    btnProcessar.addEventListener('click', async () => {
+      limparLog();
+
+      const files = inputFiles.files;
+      if (!files || files.length === 0) {
+        log("Nenhum arquivo XML selecionado.");
+        return;
+      }
+
+      log(`Processando ${files.length} arquivo(s) XML...`);
+
+      // Relatório por nota
+      const relatorio = [];
+      relatorio.push(["Nota", "Volumes", "Peso", "Destinatário", "Endereço", "Cidade"]);
+
+      // Resumo por produto
+      const resumoMap = new Map();
+
+      let totalNotas = 0;
+      let totalVolumes = 0;
+      let totalPeso = 0;
+
+      const parser = new DOMParser();
+
+      for (const file of files) {
+        try {
+          const text = await file.text();
+          const xmlDoc = parser.parseFromString(text, "application/xml");
+
+          // Pega infNFe (pode estar em NFe ou nfeProc)
+          let infNFe = xmlDoc.getElementsByTagName("infNFe")[0];
+          if (!infNFe) {
+            log(`Arquivo ${file.name}: 'infNFe' não encontrado, pulando.`);
+            continue;
+          }
+
+          // ide / nNF
+          const ide = infNFe.getElementsByTagName("ide")[0];
+          const numeroNota = getText(ide, "nNF");
+
+          // transp / vol
+          const transp = infNFe.getElementsByTagName("transp")[0];
+          let volumes = 0;
+          let peso = 0;
+          if (transp) {
+            const vol = transp.getElementsByTagName("vol")[0];
+            if (vol) {
+              const qVolStr = getText(vol, "qVol").replace(",", ".");
+              const pesoStr = getText(vol, "pesoB").replace(",", ".");
+              volumes = qVolStr ? parseFloat(qVolStr) : 0;
+              peso = pesoStr ? parseFloat(pesoStr) : 0;
+            }
+          }
+
+          // dest / enderDest
+          const dest = infNFe.getElementsByTagName("dest")[0];
+          const destinatario = dest ? getText(dest, "xNome") : "";
+          let endereco = "";
+          let cidade = "";
+          if (dest) {
+            const enderDest = dest.getElementsByTagName("enderDest")[0];
+            if (enderDest) {
+              const xLgr = getText(enderDest, "xLgr");
+              const nro  = getText(enderDest, "nro");
+              endereco = (xLgr || "") + (nro ? ", " + nro : "");
+              cidade   = getText(enderDest, "xMun");
+            }
+          }
+
+          // Adiciona linha no relatório
+          relatorio.push([
+            numeroNota,
+            volumes,
+            peso,
+            destinatario,
+            endereco,
+            cidade
+          ]);
+
+          totalNotas += 1;
+          totalVolumes += volumes;
+          totalPeso += peso;
+
+          // det / produtos
+          const dets = infNFe.getElementsByTagName("det");
+          for (let i = 0; i < dets.length; i++) {
+            const det = dets[i];
+            const prod = det.getElementsByTagName("prod")[0];
+            if (!prod) continue;
+
+            const codProd   = getText(prod, "cProd");
+            const nomeProd  = getText(prod, "xProd");
+            const unidade   = getText(prod, "uCom");
+            const qComStr   = getText(prod, "qCom").replace(",", ".");
+            const qtdCom    = qComStr ? parseFloat(qComStr) : 0;
+
+            adicionarAoResumo(resumoMap, codProd, nomeProd, unidade, qtdCom);
+          }
+
+          log(`Arquivo ${file.name}: processado com sucesso.`);
+        } catch (e) {
+          log(`Erro ao processar ${file.name}: ${e.message}`);
+        }
+      }
+
+      // Linhas de totais (igual VBA)
+      relatorio.push([]);
+      relatorio.push(["TOTAL DE NOTAS:", totalNotas, "", "", "", ""]);
+      relatorio.push(["TOTAL DE VOLUMES:", totalVolumes, "", "", "", ""]);
+      relatorio.push(["TOTAL DE PESO:", totalPeso, "", "", "", ""]);
+
+      // Monta array do resumo de produtos
+      const resumoProdutos = [];
+      resumoProdutos.push(["Código", "Produto", "Unidade", "Quantidade"]);
+      for (const [, item] of resumoMap.entries()) {
+        resumoProdutos.push([
+          item.codProd,
+          item.nomeProd,
+          item.unidade,
+          item.quantidade
+        ]);
+      }
+
+      // ---- Gerar XLSX com 2 abas ----
+      const wb = XLSX.utils.book_new();
+
+      const wsRelatorio = XLSX.utils.aoa_to_sheet(relatorio);
+      XLSX.utils.book_append_sheet(wb, wsRelatorio, "Relatorio");
+
+      const wsResumo = XLSX.utils.aoa_to_sheet(resumoProdutos);
+      XLSX.utils.book_append_sheet(wb, wsResumo, "ResumoProduto");
+
+      XLSX.writeFile(wb, "Relatorio_NFe.xlsx");
+
+      log("\nProcessamento concluído!");
+      log(`Notas: ${totalNotas}`);
+      log(`Volumes totais: ${totalVolumes}`);
+      log(`Peso total: ${totalPeso}`);
+      log("Arquivo Excel 'Relatorio_NFe.xlsx' gerado para download.");
+    });
+  </script>
+</body>
+</html>
