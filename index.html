@@ -1,23 +1,36 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <title>Logística MBLOG • Processador NF-e</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Favicon simples em SVG (MB) -->
+    <link rel="icon" type="image/svg+xml"
+          href="data:image/svg+xml,%3Csvg width='64' height='64' viewBox='0 0 64 64' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%2338bdf8'/%3E%3Cstop offset='1' stop-color='%2322c55e'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='32' cy='32' r='30' fill='url(%23g)'/%3E%3Ctext x='32' y='38' text-anchor='middle' font-family='Poppins,Arial' font-size='20' font-weight='700' fill='%23010b19'%3EMB%3C/text%3E%3C/svg%3E" />
 
     <!-- Fonte moderna -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --bg-main: #020617;
+            /* tema escuro padrão */
+            --bg-body: radial-gradient(circle at top, #0f172a 0, #020617 55%, #000 100%);
             --bg-card: rgba(15, 23, 42, 0.98);
             --accent: #38bdf8;
-            --accent-soft: rgba(56, 189, 248, 0.3);
             --accent-strong: #22c55e;
             --text-main: #e5e7eb;
             --text-muted: #9ca3af;
             --border-subtle: rgba(148, 163, 184, 0.25);
+        }
+
+        /* overrides do modo claro */
+        html[data-theme="light"] {
+            --bg-body: radial-gradient(circle at top, #e5e7eb 0, #f9fafb 50%, #e5e7eb 100%);
+            --bg-card: #ffffff;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --border-subtle: rgba(148, 163, 184, 0.4);
         }
 
         * {
@@ -28,7 +41,7 @@
             margin: 0;
             min-height: 100vh;
             font-family: "Poppins", system-ui, -apple-system, "Segoe UI", sans-serif;
-            background: radial-gradient(circle at top, #0f172a 0, #020617 55%, #000 100%);
+            background: var(--bg-body);
             color: var(--text-main);
             display: flex;
             align-items: center;
@@ -41,13 +54,20 @@
             max-width: 980px;
         }
 
-        /* ----------- BRAND ----------- */
+        /* TOP BAR + BRAND */
+
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
 
         .brand-row {
             display: flex;
             align-items: center;
-            gap: 14px;
-            margin-bottom: 18px;
+            gap: 12px;
         }
 
         .brand-icon {
@@ -72,7 +92,6 @@
             font-size: 20px;
             font-weight: 600;
             letter-spacing: 0.5px;
-            color: var(--text-main);
         }
 
         .by-author {
@@ -82,11 +101,368 @@
             color: var(--text-muted);
         }
 
-        /* ----------- MAIN CARD ----------- */
+        /* Botão de tema */
+
+        .theme-toggle {
+            border-radius: 999px;
+            padding: 6px 12px;
+            border: 1px solid var(--border-subtle);
+            background: rgba(15, 23, 42, 0.6);
+            color: var(--text-main);
+            font-size: 11px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        html[data-theme="light"] .theme-toggle {
+            background: #f9fafb;
+        }
+
+        .theme-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: #22c55e;
+        }
+
+        /* NAV TABS */
+
+        .nav-tabs {
+            display: inline-flex;
+            gap: 6px;
+            padding: 4px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            margin-top: 4px;
+        }
+
+        html[data-theme="light"] .nav-tabs {
+            background: rgba(243, 244, 246, 0.9);
+        }
+
+        .nav-tab {
+            border: none;
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 11px;
+            cursor: pointer;
+            color: var(--text-muted);
+            background: transparent;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .nav-tab.active {
+            background: radial-gradient(circle at top left, var(--accent), var(--accent-strong));
+            color: #020617;
+            font-weight: 600;
+        }
+
+        .nav-pill-badge {
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 1px 5px;
+            border-radius: 999px;
+            border: 1px solid rgba(248, 250, 252, 0.6);
+            background: rgba(15, 23, 42, 0.15);
+        }
+
+        /* MAIN CARD */
 
         .card-main {
             background: var(--bg-card);
             border-radius: 18px;
             border: 1px solid var(--border-subtle);
             box-shadow:
-                0 24px 60px rgba(15
+                0 24px 60px rgba(15, 23, 42, 0.9),
+                0 0 0 1px rgba(15, 23, 42, 0.9);
+            padding: 22px 22px 18px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-main::before {
+            content: "";
+            position: absolute;
+            inset: -40%;
+            background:
+                radial-gradient(circle at top left, rgba(56, 189, 248, 0.23), transparent 60%),
+                radial-gradient(circle at bottom right, rgba(34, 197, 94, 0.2), transparent 55%);
+            opacity: 0.7;
+            z-index: -1;
+        }
+
+        h1 {
+            font-size: 22px;
+            margin: 0 0 6px;
+        }
+
+        .subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+        }
+
+        /* GRID */
+
+        .grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+            gap: 18px;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* CARDS SIMPLES */
+
+        .card {
+            background: rgba(15, 23, 42, 0.92);
+            border-radius: 14px;
+            border: 1px solid var(--border-subtle);
+            padding: 16px;
+        }
+
+        html[data-theme="light"] .card {
+            background: rgba(248, 250, 252, 0.96);
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .hint {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        /* FILE INPUT */
+
+        input[type="file"] {
+            width: 100%;
+            padding: 9px 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(148, 163, 184, 0.5);
+            background: rgba(15, 23, 42, 0.9);
+            color: var(--text-main);
+            font-size: 13px;
+        }
+
+        html[data-theme="light"] input[type="file"] {
+            background: #f9fafb;
+        }
+
+        input[type="file"]::file-selector-button {
+            padding: 6px 12px;
+            border-radius: 999px;
+            border: none;
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+            color: #0b1120;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* BUTTON PROCESSAR */
+
+        .btn-primary {
+            margin-top: 12px;
+            padding: 10px 16px;
+            width: 100%;
+            border-radius: 999px;
+            border: none;
+            background: radial-gradient(circle at top left, var(--accent), var(--accent-strong));
+            color: #020617;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow:
+                0 14px 30px rgba(56, 189, 248, 0.25),
+                0 0 0 1px rgba(15, 23, 42, 0.9);
+        }
+
+        /* LOG BOX */
+
+        .log-box {
+            background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.98), #020617);
+            border-radius: 10px;
+            border: 1px solid rgba(30, 64, 175, 0.8);
+            padding: 10px;
+            font-size: 11px;
+            height: 170px;
+            overflow-y: auto;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        }
+
+        html[data-theme="light"] .log-box {
+            background: #020617;
+            color: #e5e7eb;
+        }
+
+        /* FUTURAS FUNCIONALIDADES */
+
+        .dev-section {
+            margin-top: 20px;
+            background: rgba(56, 189, 248, 0.06);
+            border: 1px dashed rgba(56, 189, 248, 0.5);
+            border-radius: 12px;
+            padding: 12px 14px;
+        }
+
+        .dev-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 4px;
+        }
+
+        .dev-text {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .dev-tags {
+            margin-top: 6px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .dev-tag {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.5);
+            background: rgba(15, 23, 42, 0.95);
+        }
+
+        html[data-theme="light"] .dev-tag {
+            background: rgba(248, 250, 252, 0.96);
+        }
+    </style>
+
+    <!-- Biblioteca XLSX -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- Lógica principal (já está no script.js do repositório) -->
+    <script src="script.js" defer></script>
+</head>
+
+<body>
+<div class="shell">
+
+    <!-- TOP BAR -->
+    <div class="top-bar">
+        <div class="brand-row">
+            <div class="brand-icon"><span>MB</span></div>
+            <div>
+                <div class="brand-title">LOGÍSTICA MBLOG</div>
+                <div class="by-author">by Paulo Corrêa</div>
+                <div class="nav-tabs">
+                    <button class="nav-tab active">
+                        Processador NF-e
+                    </button>
+                    <button class="nav-tab" disabled>
+                        Dashboard
+                        <span class="nav-pill-badge">em dev</span>
+                    </button>
+                    <button class="nav-tab" disabled>
+                        Ferramentas extras
+                        <span class="nav-pill-badge">em dev</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <button id="themeToggle" class="theme-toggle" type="button">
+            <span class="theme-dot"></span>
+            <span class="theme-label">Modo escuro</span>
+        </button>
+    </div>
+
+    <!-- MAIN CARD -->
+    <div class="card-main">
+        <h1>Processador XML NFe → XLSX</h1>
+        <div class="subtitle">
+            Selecione múltiplos XMLs de NF-e e gere automaticamente um relatório em Excel com resumo por nota e por produto.
+        </div>
+
+        <div class="grid">
+            <!-- COLUNA ESQUERDA -->
+            <div class="card">
+                <div class="card-title">Importar arquivos XML</div>
+                <p class="hint">
+                    Aceita múltiplos arquivos de uma vez. Nenhum dado é enviado para servidor – tudo é processado localmente no seu navegador.
+                </p>
+                <input type="file" id="xmlFiles" accept=".xml" multiple="multiple">
+
+                <button id="btnProcessar" class="btn-primary">
+                    Processar XMLs e gerar XLSX
+                </button>
+            </div>
+
+            <!-- COLUNA DIREITA -->
+            <div class="card">
+                <div class="card-title">Status / Log</div>
+                <div id="log" class="log-box">
+                    Aguardando processamento...
+                </div>
+            </div>
+        </div>
+
+        <!-- FUTURAS FUNCIONALIDADES -->
+        <div class="dev-section">
+            <div class="dev-title">Em desenvolvimento</div>
+            <div class="dev-text">
+                Este espaço será usado para novas ferramentas da Logística MBLOG, como:
+            </div>
+            <div class="dev-tags">
+                <span class="dev-tag">Dashboard de volumes e peso</span>
+                <span class="dev-tag">Resumo por cliente / cidade</span>
+                <span class="dev-tag">Validador de XML NF-e</span>
+                <span class="dev-tag">Leitor de DANFE em PDF</span>
+                <span class="dev-tag">Consulta rápida de CNPJ</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Script leve só para o modo claro/escuro -->
+<script>
+(function () {
+    var root = document.documentElement;
+    var btn = document.getElementById('themeToggle');
+    var label = btn.querySelector('.theme-label');
+
+    function applyTheme(theme) {
+        root.setAttribute('data-theme', theme);
+        label.textContent = theme === 'light' ? 'Modo claro' : 'Modo escuro';
+    }
+
+    var saved = localStorage.getItem('mblog-theme');
+    if (!saved) {
+        saved = 'dark';
+    }
+    applyTheme(saved);
+
+    btn.addEventListener('click', function () {
+        var current = root.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+        var next = current === 'light' ? 'dark' : 'light';
+        applyTheme(next);
+        localStorage.setItem('mblog-theme', next);
+    });
+})();
+</script>
+
+</body>
+</html>
