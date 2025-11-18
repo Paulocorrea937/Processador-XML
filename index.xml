@@ -1,209 +1,178 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <title>Processador de XML NFe - XLSX</title>
+    <meta charset="UTF-8">
+    <title>Processador XML NFe - XLSX</title>
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 800px;
-      margin: 20px auto;
-    }
-    h1 {
-      font-size: 22px;
-      margin-bottom: 10px;
-    }
-    .card {
-      border: 1px solid #ccc;
-      padding: 15px;
-      border-radius: 6px;
-      margin-bottom: 15px;
-    }
-    button {
-      padding: 8px 14px;
-      cursor: pointer;
-    }
-    .log {
-      font-size: 13px;
-      white-space: pre-wrap;
-      background: #f7f7f7;
-      padding: 10px;
-      border-radius: 4px;
-      max-height: 220px;
-      overflow-y: auto;
-    }
-  </style>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+        }
+        h1 { font-size: 22px; margin-bottom: 10px; }
+        .card {
+            border: 1px solid #ccc;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+        button {
+            padding: 8px 14px;
+            cursor: pointer;
+        }
+        .log {
+            font-size: 13px;
+            white-space: pre-wrap;
+            background: #f7f7f7;
+            padding: 10px;
+            border-radius: 4px;
+            max-height: 220px;
+            overflow-y: auto;
+        }
+    </style>
 
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
-  <h1>Processador de XML NFe (Web XLSX)</h1>
 
-  <div class="card">
-    <p>Selecione um ou mais arquivos .xml de NFe:</p>
+    <h1>Processador XML NFe (Web XLSX)</h1>
 
-    <input type="file" id="xmlFiles" accept=".xml" multiple="multiple" />
+    <div class="card">
+        <p>Selecione um ou mais arquivos .xml de NFe:</p>
 
-    <br><br>
-    <button id="btnProcessar">Processar XMLs e gerar XLSX</button>
-  </div>
+        <!-- IMPORTANTE: atributo multiple com valor -->
+        <input type="file" id="xmlFiles" accept=".xml" multiple="multiple">
 
-  <div class="card">
-    <h3>Status / Log</h3>
-    <div id="log" class="log"></div>
-  </div>
+        <br><br>
+        <button id="btnProcessar">Processar XMLs e gerar XLSX</button>
+    </div>
 
-  <script>
-    const logEl = document.getElementById('log');
-    const btnProcessar = document.getElementById('btnProcessar');
-    const inputFiles = document.getElementById('xmlFiles');
+    <div class="card">
+        <h3>Status / Log</h3>
+        <div id="log" class="log"></div>
+    </div>
 
-    function log(msg) {
-      logEl.textContent += msg + "\n";
-    }
+<script>
+const logEl = document.getElementById('log');
+const btnProcessar = document.getElementById('btnProcessar');
+const inputFiles = document.getElementById('xmlFiles');
 
-    function limparLog() {
-      logEl.textContent = "";
-    }
+function log(msg) { logEl.textContent += msg + "\n"; }
+function limparLog() { logEl.textContent = ""; }
 
-    function getText(parent, tagName) {
-      if (!parent) return "";
-      const els = parent.getElementsByTagName(tagName);
-      if (els.length === 0) return "";
-      return (els[0].textContent || "").trim();
-    }
+function getText(parent, tagName) {
+    if (!parent) return "";
+    const els = parent.getElementsByTagName(tagName);
+    if (!els.length) return "";
+    return (els[0].textContent || "").trim();
+}
 
-    function adicionarAoResumo(mapResumo, codProd, nomeProd, unidade, qtd) {
-      const chave = codProd + "|" + unidade;
-      if (mapResumo.has(chave)) {
-        const item = mapResumo.get(chave);
-        item.quantidade += qtd;
-      } else {
+function adicionarAoResumo(mapResumo, codProd, nomeProd, unidade, qtd) {
+    const chave = codProd + "|" + unidade;
+    if (mapResumo.has(chave)) {
+        mapResumo.get(chave).quantidade += qtd;
+    } else {
         mapResumo.set(chave, {
-          codProd,
-          nomeProd,
-          unidade,
-          quantidade: qtd
+            codProd, nomeProd, unidade, quantidade: qtd
         });
-      }
+    }
+}
+
+btnProcessar.addEventListener('click', async () => {
+    limparLog();
+
+    const files = inputFiles.files;
+    if (!files.length) {
+        log("Nenhum XML selecionado.");
+        return;
     }
 
-    btnProcessar.addEventListener('click', async () => {
-      limparLog();
+    log(Processando ${files.length} arquivo(s)...);
 
-      const files = inputFiles.files;
-      if (!files || files.length === 0) {
-        log("Nenhum arquivo XML selecionado.");
-        return;
-      }
+    const relatorio = [["Nota","Volumes","Peso","Destinatário","Endereço","Cidade"]];
+    const resumo = new Map();
 
-      log(Processando ${files.length} arquivo(s)...);
+    let totalNotas = 0, totalVolumes = 0, totalPeso = 0;
+    const parser = new DOMParser();
 
-      const relatorio = [];
-      relatorio.push(["Nota", "Volumes", "Peso", "Destinatário", "Endereço", "Cidade"]);
-
-      const resumoMap = new Map();
-
-      let totalNotas = 0;
-      let totalVolumes = 0;
-      let totalPeso = 0;
-
-      const parser = new DOMParser();
-
-      for (const file of files) {
+    for (const file of files) {
         try {
-          const text = await file.text();
-          const xmlDoc = parser.parseFromString(text, "application/xml");
+            const xml = await file.text();
+            const doc = parser.parseFromString(xml,"application/xml");
 
-          let infNFe = xmlDoc.getElementsByTagName("infNFe")[0];
-          if (!infNFe) {
-            log(Arquivo ${file.name}: infNFe não encontrado.);
-            continue;
-          }
+            const inf = doc.getElementsByTagName("infNFe")[0];
+            if (!inf) { log(Erro: infNFe não encontrado em ${file.name}); continue; }
 
-          const ide = infNFe.getElementsByTagName("ide")[0];
-          const numeroNota = getText(ide, "nNF");
+            const ide = inf.getElementsByTagName("ide")[0];
+            const numero = getText(ide,"nNF");
 
-          const transp = infNFe.getElementsByTagName("transp")[0];
-          let volumes = 0;
-          let peso = 0;
-
-          if (transp) {
-            const vol = transp.getElementsByTagName("vol")[0];
-            if (vol) {
-              volumes = parseFloat(getText(vol, "qVol").replace(",", ".")) || 0;
-              peso = parseFloat(getText(vol, "pesoB").replace(",", ".")) || 0;
+            let volumes = 0, peso = 0;
+            const transp = inf.getElementsByTagName("transp")[0];
+            if (transp) {
+                const vol = transp.getElementsByTagName("vol")[0];
+                if (vol) {
+                    volumes = parseFloat(getText(vol,"qVol").replace(",",".") ) || 0;
+                    peso    = parseFloat(getText(vol,"pesoB").replace(",",".") ) || 0;
+                }
             }
-          }
 
-          const dest = infNFe.getElementsByTagName("dest")[0];
-          const destinatario = dest ? getText(dest, "xNome") : "";
-          let endereco = "";
-          let cidade = "";
+            const dest = inf.getElementsByTagName("dest")[0];
+            const nome = dest ? getText(dest,"xNome") : "";
+            let end = "", cid = "";
 
-          if (dest) {
-            const enderDest = dest.getElementsByTagName("enderDest")[0];
-            if (enderDest) {
-              endereco = ${getText(enderDest, "xLgr")}, ${getText(enderDest, "nro")};
-              cidade = getText(enderDest, "xMun");
+            if (dest) {
+                const ent = dest.getElementsByTagName("enderDest")[0];
+                if (ent) {
+                    end = ${getText(ent,"xLgr")}, ${getText(ent,"nro")};
+                    cid = getText(ent,"xMun");
+                }
             }
-          }
 
-          relatorio.push([
-            numeroNota,
-            volumes,
-            peso,
-            destinatario,
-            endereco,
-            cidade
-          ]);
+            relatorio.push([numero, volumes, peso, nome, end, cid]);
 
-          totalNotas++;
-          totalVolumes += volumes;
-          totalPeso += peso;
+            totalNotas++;
+            totalVolumes += volumes;
+            totalPeso += peso;
 
-          const dets = infNFe.getElementsByTagName("det");
-          for (let i = 0; i < dets.length; i++) {
-            const prod = dets[i].getElementsByTagName("prod")[0];
-            if (!prod) continue;
+            const dets = inf.getElementsByTagName("det");
+            for (const d of dets) {
+                const prod = d.getElementsByTagName("prod")[0];
+                if (!prod) continue;
 
-            const cod = getText(prod, "cProd");
-            const nome = getText(prod, "xProd");
-            const unidade = getText(prod, "uCom");
-            const q = parseFloat(getText(prod, "qCom").replace(",", ".")) || 0;
+                const cod = getText(prod,"cProd");
+                const nomeProd = getText(prod,"xProd");
+                const un = getText(prod,"uCom");
+                const q = parseFloat(getText(prod,"qCom").replace(",",".") ) || 0;
 
-            adicionarAoResumo(resumoMap, cod, nome, unidade, q);
-          }
+                adicionarAoResumo(resumo,cod,nomeProd,un,q);
+            }
 
-          log(OK: ${file.name});
+            log(OK: ${file.name});
+
         } catch (e) {
-          log(Erro no arquivo ${file.name}: ${e});
+            log(Erro no arquivo ${file.name}: ${e});
         }
-      }
+    }
 
-      relatorio.push([]);
-      relatorio.push(["TOTAL DE NOTAS:", totalNotas]);
-      relatorio.push(["TOTAL DE VOLUMES:", totalVolumes]);
-      relatorio.push(["TOTAL DE PESO:", totalPeso]);
+    relatorio.push([]);
+    relatorio.push(["TOTAL DE NOTAS:", totalNotas]);
+    relatorio.push(["TOTAL DE VOLUMES:", totalVolumes]);
+    relatorio.push(["TOTAL DE PESO:", totalPeso]);
 
-      const resumoProdutos = [["Código", "Produto", "Unidade", "Quantidade"]];
-      for (const [, item] of resumoMap) {
-        resumoProdutos.push([
-          item.codProd,
-          item.nomeProd,
-          item.unidade,
-          item.quantidade
-        ]);
-      }
+    const resumoArr = [["Código","Produto","Unidade","Quantidade"]];
+    for (const [k,item] of resumo) {
+        resumoArr.push([item.codProd,item.nomeProd,item.unidade,item.quantidade]);
+    }
 
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(relatorio), "Relatorio");
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(resumoProdutos), "ResumoProduto");
-      XLSX.writeFile(wb, "Relatorio_NFe.xlsx");
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(relatorio), "Relatorio");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(resumoArr), "ResumoProduto");
 
-      log("\nArquivo XLSX gerado!");
-    });
-  </script>
+    XLSX.writeFile(wb, "Relatorio_NFe.xlsx");
+    log("\nArquivo XLSX gerado!");
+});
+</script>
+
 </body>
 </html>
