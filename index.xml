@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Processador de XML NFe - XLSX</title>
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -34,15 +35,17 @@
     }
   </style>
 
-  <!-- Biblioteca para gerar XLSX -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
-  <h1>Processador de XML NFe (versão Web - XLSX)</h1>
+  <h1>Processador de XML NFe (Web XLSX)</h1>
 
   <div class="card">
-    <p>Selecione um ou mais arquivos <strong>.xml</strong> de NF-e:</p>
+    <p>Selecione um ou mais arquivos .xml de NFe:</p>
+
+    <!-- ESSA É A LINHA DO ERRO — ELA PRECISA ESTAR ASSIM -->
     <input type="file" id="xmlFiles" accept=".xml" multiple />
+
     <br><br>
     <button id="btnProcessar">Processar XMLs e gerar XLSX</button>
   </div>
@@ -65,7 +68,6 @@
       logEl.textContent = "";
     }
 
-    // Função pra pegar texto de um nó filho (sem se preocupar com namespace)
     function getText(parent, tagName) {
       if (!parent) return "";
       const els = parent.getElementsByTagName(tagName);
@@ -73,7 +75,6 @@
       return (els[0].textContent || "").trim();
     }
 
-    // Adicionar ao resumo (similar ao teu dictResumo no VBA)
     function adicionarAoResumo(mapResumo, codProd, nomeProd, unidade, qtd) {
       const chave = codProd + "|" + unidade;
       if (mapResumo.has(chave)) {
@@ -98,13 +99,11 @@
         return;
       }
 
-      log(`Processando ${files.length} arquivo(s) XML...`);
+      log(Processando ${files.length} arquivo(s)...);
 
-      // Relatório por nota
       const relatorio = [];
       relatorio.push(["Nota", "Volumes", "Peso", "Destinatário", "Endereço", "Cidade"]);
 
-      // Resumo por produto
       const resumoMap = new Map();
 
       let totalNotas = 0;
@@ -118,47 +117,40 @@
           const text = await file.text();
           const xmlDoc = parser.parseFromString(text, "application/xml");
 
-          // Pega infNFe (pode estar em NFe ou nfeProc)
           let infNFe = xmlDoc.getElementsByTagName("infNFe")[0];
           if (!infNFe) {
-            log(`Arquivo ${file.name}: 'infNFe' não encontrado, pulando.`);
+            log(Arquivo ${file.name}: infNFe não encontrado.);
             continue;
           }
 
-          // ide / nNF
           const ide = infNFe.getElementsByTagName("ide")[0];
           const numeroNota = getText(ide, "nNF");
 
-          // transp / vol
           const transp = infNFe.getElementsByTagName("transp")[0];
           let volumes = 0;
           let peso = 0;
+
           if (transp) {
             const vol = transp.getElementsByTagName("vol")[0];
             if (vol) {
-              const qVolStr = getText(vol, "qVol").replace(",", ".");
-              const pesoStr = getText(vol, "pesoB").replace(",", ".");
-              volumes = qVolStr ? parseFloat(qVolStr) : 0;
-              peso = pesoStr ? parseFloat(pesoStr) : 0;
+              volumes = parseFloat(getText(vol, "qVol").replace(",", ".")) || 0;
+              peso = parseFloat(getText(vol, "pesoB").replace(",", ".")) || 0;
             }
           }
 
-          // dest / enderDest
           const dest = infNFe.getElementsByTagName("dest")[0];
           const destinatario = dest ? getText(dest, "xNome") : "";
           let endereco = "";
           let cidade = "";
+
           if (dest) {
             const enderDest = dest.getElementsByTagName("enderDest")[0];
             if (enderDest) {
-              const xLgr = getText(enderDest, "xLgr");
-              const nro  = getText(enderDest, "nro");
-              endereco = (xLgr || "") + (nro ? ", " + nro : "");
-              cidade   = getText(enderDest, "xMun");
+              endereco = ${getText(enderDest, "xLgr")}, ${getText(enderDest, "nro")};
+              cidade = getText(enderDest, "xMun");
             }
           }
 
-          // Adiciona linha no relatório
           relatorio.push([
             numeroNota,
             volumes,
@@ -168,42 +160,36 @@
             cidade
           ]);
 
-          totalNotas += 1;
+          totalNotas++;
           totalVolumes += volumes;
           totalPeso += peso;
 
-          // det / produtos
           const dets = infNFe.getElementsByTagName("det");
           for (let i = 0; i < dets.length; i++) {
-            const det = dets[i];
-            const prod = det.getElementsByTagName("prod")[0];
+            const prod = dets[i].getElementsByTagName("prod")[0];
             if (!prod) continue;
 
-            const codProd   = getText(prod, "cProd");
-            const nomeProd  = getText(prod, "xProd");
-            const unidade   = getText(prod, "uCom");
-            const qComStr   = getText(prod, "qCom").replace(",", ".");
-            const qtdCom    = qComStr ? parseFloat(qComStr) : 0;
+            const cod = getText(prod, "cProd");
+            const nome = getText(prod, "xProd");
+            const unidade = getText(prod, "uCom");
+            const q = parseFloat(getText(prod, "qCom").replace(",", ".")) || 0;
 
-            adicionarAoResumo(resumoMap, codProd, nomeProd, unidade, qtdCom);
+            adicionarAoResumo(resumoMap, cod, nome, unidade, q);
           }
 
-          log(`Arquivo ${file.name}: processado com sucesso.`);
+          log(OK: ${file.name});
         } catch (e) {
-          log(`Erro ao processar ${file.name}: ${e.message}`);
+          log(Erro no arquivo ${file.name}: ${e});
         }
       }
 
-      // Linhas de totais (igual VBA)
       relatorio.push([]);
-      relatorio.push(["TOTAL DE NOTAS:", totalNotas, "", "", "", ""]);
-      relatorio.push(["TOTAL DE VOLUMES:", totalVolumes, "", "", "", ""]);
-      relatorio.push(["TOTAL DE PESO:", totalPeso, "", "", "", ""]);
+      relatorio.push(["TOTAL DE NOTAS:", totalNotas]);
+      relatorio.push(["TOTAL DE VOLUMES:", totalVolumes]);
+      relatorio.push(["TOTAL DE PESO:", totalPeso]);
 
-      // Monta array do resumo de produtos
-      const resumoProdutos = [];
-      resumoProdutos.push(["Código", "Produto", "Unidade", "Quantidade"]);
-      for (const [, item] of resumoMap.entries()) {
+      const resumoProdutos = [["Código", "Produto", "Unidade", "Quantidade"]];
+      for (const [, item] of resumoMap) {
         resumoProdutos.push([
           item.codProd,
           item.nomeProd,
@@ -212,22 +198,12 @@
         ]);
       }
 
-      // ---- Gerar XLSX com 2 abas ----
       const wb = XLSX.utils.book_new();
-
-      const wsRelatorio = XLSX.utils.aoa_to_sheet(relatorio);
-      XLSX.utils.book_append_sheet(wb, wsRelatorio, "Relatorio");
-
-      const wsResumo = XLSX.utils.aoa_to_sheet(resumoProdutos);
-      XLSX.utils.book_append_sheet(wb, wsResumo, "ResumoProduto");
-
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(relatorio), "Relatorio");
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(resumoProdutos), "ResumoProduto");
       XLSX.writeFile(wb, "Relatorio_NFe.xlsx");
 
-      log("\nProcessamento concluído!");
-      log(`Notas: ${totalNotas}`);
-      log(`Volumes totais: ${totalVolumes}`);
-      log(`Peso total: ${totalPeso}`);
-      log("Arquivo Excel 'Relatorio_NFe.xlsx' gerado para download.");
+      log("\nArquivo XLSX gerado!");
     });
   </script>
 </body>
