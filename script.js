@@ -1,17 +1,20 @@
 function log(msg) {
     var logEl = document.getElementById("log");
+    if (!logEl) return;
     logEl.textContent += msg + "\n";
 }
 
 function limparLog() {
-    document.getElementById("log").textContent = "";
+    var logEl = document.getElementById("log");
+    if (logEl) logEl.textContent = "";
 }
 
 function getText(parent, tagName) {
     if (!parent) return "";
     var els = parent.getElementsByTagName(tagName);
-    if (!els.length) return "";
-    return (els[0].textContent || "").trim();
+    if (!els || !els.length) return "";
+    var t = els[0].textContent || "";
+    return t.replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
 }
 
 function adicionarAoResumo(resumo, codProd, nomeProd, unidade, qtd) {
@@ -48,8 +51,10 @@ function processarXml(xmlTexto, nomeArquivo, relatorio, resumo, totais) {
     if (transp) {
         var vol = transp.getElementsByTagName("vol")[0];
         if (vol) {
-            volumes = parseFloat(getText(vol, "qVol").replace(",", ".")) || 0;
-            peso = parseFloat(getText(vol, "pesoB").replace(",", ".")) || 0;
+            var qVolStr = getText(vol, "qVol").replace(",", ".");
+            var pesoStr = getText(vol, "pesoB").replace(",", ".");
+            volumes = qVolStr ? parseFloat(qVolStr) : 0;
+            peso = pesoStr ? parseFloat(pesoStr) : 0;
         }
     }
 
@@ -68,7 +73,7 @@ function processarXml(xmlTexto, nomeArquivo, relatorio, resumo, totais) {
 
     relatorio.push([numero, volumes, peso, nomeDest, endereco, cidade]);
 
-    totais.totalNotas++;
+    totais.totalNotas += 1;
     totais.totalVolumes += volumes;
     totais.totalPeso += peso;
 
@@ -80,7 +85,8 @@ function processarXml(xmlTexto, nomeArquivo, relatorio, resumo, totais) {
         var cod = getText(prod, "cProd");
         var nomeProd = getText(prod, "xProd");
         var un = getText(prod, "uCom");
-        var q = parseFloat(getText(prod, "qCom").replace(",", ".")) || 0;
+        var qStr = getText(prod, "qCom").replace(",", ".");
+        var q = qStr ? parseFloat(qStr) : 0;
 
         adicionarAoResumo(resumo, cod, nomeProd, un, q);
     }
@@ -89,14 +95,16 @@ function processarXml(xmlTexto, nomeArquivo, relatorio, resumo, totais) {
 }
 
 function gerarXlsx(relatorio, resumo, totais) {
+    // linhas de total
     relatorio.push([]);
     relatorio.push(["TOTAL DE NOTAS:", totais.totalNotas]);
     relatorio.push(["TOTAL DE VOLUMES:", totais.totalVolumes]);
     relatorio.push(["TOTAL DE PESO:", totais.totalPeso]);
 
+    // resumo
     var resumoArr = [["Código", "Produto", "Unidade", "Quantidade"]];
-
     for (var chave in resumo) {
+        if (!resumo.hasOwnProperty(chave)) continue;
         var item = resumo[chave];
         resumoArr.push([item.codProd, item.nomeProd, item.unidade, item.quantidade]);
     }
@@ -112,13 +120,25 @@ window.onload = function () {
     var btn = document.getElementById("btnProcessar");
     var input = document.getElementById("xmlFiles");
 
+    if (!btn || !input) {
+        console.error("Elementos não encontrados no DOM.");
+        return;
+    }
+
     btn.onclick = function () {
         limparLog();
         log("Botão clicado.");
 
+        if (typeof XLSX === "undefined") {
+            log("Erro: XLSX não carregou.");
+            alert("Erro: biblioteca XLSX não carregou. Verifique a conexão e recarregue a página.");
+            return;
+        }
+
         var files = input.files;
-        if (!files.length) {
-            alert("Nenhum arquivo selecionado.");
+        if (!files || !files.length) {
+            log("Nenhum XML selecionado.");
+            alert("Selecione pelo menos um arquivo XML.");
             return;
         }
 
@@ -128,25 +148,41 @@ window.onload = function () {
         var resumo = {};
         var totais = { totalNotas: 0, totalVolumes: 0, totalPeso: 0 };
 
-        var contador = 0;
+        var totalArquivos = files.length;
+        var processados = 0;
 
-        for (let i = 0; i < files.length; i++) {
-            let file = files[i];
-            let reader = new FileReader();
+        for (var i = 0; i < files.length; i++) {
+            (function (file) {
+                var reader = new FileReader();
 
-            reader.onload = function (e) {
-                processarXml(e.target.result, file.name, relatorio, resumo, totais);
-                contador++;
+                reader.onload = function (e) {
+                    try {
+                        processarXml(e.target.result, file.name, relatorio, resumo, totais);
+                    } catch (erro) {
+                        log("Erro ao processar " + file.name + ": " + erro);
+                    }
+                    processados++;
 
-                if (contador === files.length) {
-                    log("Gerando XLSX...");
-                    gerarXlsx(relatorio, resumo, totais);
-                    log("Arquivo gerado!");
-                    alert("Relatório gerado com sucesso!");
-                }
-            };
+                    if (processados === totalArquivos) {
+                        log("Todos os arquivos processados. Gerando XLSX...");
+                        try {
+                            gerarXlsx(relatorio, resumo, totais);
+                            log("Arquivo XLSX gerado com sucesso.");
+                            alert("Relatório gerado! Verifique o arquivo Relatorio_NFe.xlsx na pasta de downloads.");
+                        } catch (erro2) {
+                            log("Erro ao gerar XLSX: " + erro2);
+                            alert("Erro ao gerar XLSX. Veja o log na tela.");
+                        }
+                    }
+                };
 
-            reader.readAsText(file);
+                reader.onerror = function () {
+                    log("Erro de leitura no arquivo " + file.name);
+                    processados++;
+                };
+
+                reader.readAsText(file);
+            })(files[i]);
         }
     };
 };
