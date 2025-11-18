@@ -35,6 +35,7 @@
         }
     </style>
 
+    <!-- Biblioteca XLSX para gerar o arquivo do Excel -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
@@ -55,126 +56,76 @@
         <div id="log" class="log"></div>
     </div>
 
-<script>
-const logEl = document.getElementById('log');
-const btnProcessar = document.getElementById('btnProcessar');
-const inputFiles = document.getElementById('xmlFiles');
+    <script>
+    (function () {
+      const logEl = document.getElementById('log');
+      const btnProcessar = document.getElementById('btnProcessar');
+      const inputFiles = document.getElementById('xmlFiles');
 
-function log(msg) { logEl.textContent += msg + "\n"; }
-function limparLog() { logEl.textContent = ""; }
+      function log(msg) {
+        logEl.textContent += msg + "\n";
+      }
 
-function getText(parent, tagName) {
-    if (!parent) return "";
-    const els = parent.getElementsByTagName(tagName);
-    if (!els.length) return "";
-    return (els[0].textContent || "").trim();
-}
+      function limparLog() {
+        logEl.textContent = "";
+      }
 
-function adicionarAoResumo(mapResumo, codProd, nomeProd, unidade, qtd) {
-    const chave = codProd + "|" + unidade;
-    if (mapResumo.has(chave)) {
-        mapResumo.get(chave).quantidade += qtd;
-    } else {
-        mapResumo.set(chave, {
-            codProd, nomeProd, unidade, quantidade: qtd
-        });
-    }
-}
+      function getText(parent, tagName) {
+        if (!parent) return "";
+        const els = parent.getElementsByTagName(tagName);
+        if (!els.length) return "";
+        return (els[0].textContent || "").trim();
+      }
 
-btnProcessar.addEventListener('click', async () => {
-    limparLog();
+      function adicionarAoResumo(mapResumo, codProd, nomeProd, unidade, qtd) {
+        const chave = codProd + "|" + unidade;
+        if (mapResumo.has(chave)) {
+          mapResumo.get(chave).quantidade += qtd;
+        } else {
+          mapResumo.set(chave, {
+            codProd: codProd,
+            nomeProd: nomeProd,
+            unidade: unidade,
+            quantidade: qtd
+          });
+        }
+      }
 
-    const files = inputFiles.files;
-    if (!files.length) {
-        log("Nenhum XML selecionado.");
-        return;
-    }
+      btnProcessar.addEventListener('click', async function () {
+        limparLog();
+        log("Botão clicado. Iniciando processamento...");
 
-    log(`Processando ${files.length} arquivo(s)...`);
+        if (typeof XLSX === "undefined") {
+          alert("Erro: biblioteca XLSX não carregou. Verifique sua conexão e recarregue a página.");
+          log("Erro: objeto XLSX está indefinido.");
+          return;
+        }
 
-    const relatorio = [["Nota","Volumes","Peso","Destinatário","Endereço","Cidade"]];
-    const resumo = new Map();
+        const files = inputFiles.files;
+        if (!files || !files.length) {
+          log("Nenhum XML selecionado.");
+          alert("Selecione pelo menos um arquivo XML.");
+          return;
+        }
 
-    let totalNotas = 0, totalVolumes = 0, totalPeso = 0;
-    const parser = new DOMParser();
+        log("Arquivos selecionados: " + files.length);
 
-    for (const file of files) {
-        try {
+        const relatorio = [["Nota", "Volumes", "Peso", "Destinatário", "Endereço", "Cidade"]];
+        const resumo = new Map();
+
+        let totalNotas = 0;
+        let totalVolumes = 0;
+        let totalPeso = 0;
+
+        const parser = new DOMParser();
+
+        for (const file of files) {
+          try {
+            log("Lendo arquivo: " + file.name);
             const xml = await file.text();
-            const doc = parser.parseFromString(xml,"application/xml");
+            const doc = parser.parseFromString(xml, "application/xml");
 
             const inf = doc.getElementsByTagName("infNFe")[0];
-            if (!inf) { log(`Erro: infNFe não encontrado em ${file.name}`); continue; }
-
-            const ide = inf.getElementsByTagName("ide")[0];
-            const numero = getText(ide,"nNF");
-
-            let volumes = 0, peso = 0;
-            const transp = inf.getElementsByTagName("transp")[0];
-            if (transp) {
-                const vol = transp.getElementsByTagName("vol")[0];
-                if (vol) {
-                    volumes = parseFloat(getText(vol,"qVol").replace(",",".") ) || 0;
-                    peso    = parseFloat(getText(vol,"pesoB").replace(",",".") ) || 0;
-                }
-            }
-
-            const dest = inf.getElementsByTagName("dest")[0];
-            const nome = dest ? getText(dest,"xNome") : "";
-            let end = "", cid = "";
-
-            if (dest) {
-                const ent = dest.getElementsByTagName("enderDest")[0];
-                if (ent) {
-                    end = `${getText(ent,"xLgr")}, ${getText(ent,"nro")}`;
-                    cid = getText(ent,"xMun");
-                }
-            }
-
-            relatorio.push([numero, volumes, peso, nome, end, cid]);
-
-            totalNotas++;
-            totalVolumes += volumes;
-            totalPeso += peso;
-
-            const dets = inf.getElementsByTagName("det");
-            for (const d of dets) {
-                const prod = d.getElementsByTagName("prod")[0];
-                if (!prod) continue;
-
-                const cod = getText(prod,"cProd");
-                const nomeProd = getText(prod,"xProd");
-                const un = getText(prod,"uCom");
-                const q = parseFloat(getText(prod,"qCom").replace(",",".") ) || 0;
-
-                adicionarAoResumo(resumo,cod,nomeProd,un,q);
-            }
-
-            log(`OK: ${file.name}`);
-
-        } catch (e) {
-            log(`Erro no arquivo ${file.name}: ${e}`);
-        }
-    }
-
-    relatorio.push([]);
-    relatorio.push(["TOTAL DE NOTAS:", totalNotas]);
-    relatorio.push(["TOTAL DE VOLUMES:", totalVolumes]);
-    relatorio.push(["TOTAL DE PESO:", totalPeso]);
-
-    const resumoArr = [["Código","Produto","Unidade","Quantidade"]];
-    for (const [k,item] of resumo) {
-        resumoArr.push([item.codProd,item.nomeProd,item.unidade,item.quantidade]);
-    }
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(relatorio), "Relatorio");
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(resumoArr), "ResumoProduto");
-
-    XLSX.writeFile(wb, "Relatorio_NFe.xlsx");
-    log("\nArquivo XLSX gerado!");
-});
-</script>
-
-</body>
-</html>
+            if (!inf) {
+              log("infNFe não encontrado em " + file.name);
+              continue;
