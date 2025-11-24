@@ -187,11 +187,11 @@ window.onload = function () {
         }
     };
 
-    // Botão que baixa o ZIP do Google Drive
+    // Botão que abre o painel para baixar XML do Google Drive
     var btnDrive = document.getElementById("btnDrive");
     if (btnDrive) {
         btnDrive.onclick = function () {
-            var webAppUrl = "https://script.google.com/macros/s/AKfycbx4IhoMlB11778x4L-geD9KM-lsSdY0QMgmgR2lzMMZYkw74oo1xmXPi9l0dySgKWKI/exec";
+            var webAppUrl = "https://script.google.com/macros/s/AKfycbwHT700qJ8mBiq2KMtkgevo3T9AjtyFgdJ7N3IxJlGQydraOYdbKiEJmypDRto65PR8/exec";
             window.open(webAppUrl, "_blank");
         };
     } else {
