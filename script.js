@@ -111,4 +111,90 @@ function gerarXlsx(relatorio, resumo, totais) {
 
     var wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(relatorio), "Relatorio");
-    XLSX.utils.book_append_sheet(wb, XLSX.util
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(resumoArr), "ResumoProduto");
+
+    XLSX.writeFile(wb, "Relatorio_NFe.xlsx");
+}
+
+window.onload = function () {
+    var btn = document.getElementById("btnProcessar");
+    var input = document.getElementById("xmlFiles");
+
+    if (!btn || !input) {
+        console.error("Elementos não encontrados no DOM.");
+        return;
+    }
+
+    // Botão que processa arquivos locais
+    btn.onclick = function () {
+        limparLog();
+        log("Botão clicado.");
+
+        if (typeof XLSX === "undefined") {
+            log("Erro: XLSX não carregou.");
+            alert("Erro: biblioteca XLSX não carregou. Verifique a conexão e recarregue a página.");
+            return;
+        }
+
+        var files = input.files;
+        if (!files || !files.length) {
+            log("Nenhum XML selecionado.");
+            alert("Selecione pelo menos um arquivo XML.");
+            return;
+        }
+
+        log("Arquivos selecionados: " + files.length);
+
+        var relatorio = [["Nota", "Volumes", "Peso", "Destinatário", "Endereço", "Cidade"]];
+        var resumo = {};
+        var totais = { totalNotas: 0, totalVolumes: 0, totalPeso: 0 };
+
+        var totalArquivos = files.length;
+        var processados = 0;
+
+        for (var i = 0; i < files.length; i++) {
+            (function (file) {
+                var reader = new FileReader();
+
+                reader.onload = function (e) {
+                    try {
+                        processarXml(e.target.result, file.name, relatorio, resumo, totais);
+                    } catch (erro) {
+                        log("Erro ao processar " + file.name + ": " + erro);
+                    }
+                    processados++;
+
+                    if (processados === totalArquivos) {
+                        log("Todos os arquivos processados. Gerando XLSX...");
+                        try {
+                            gerarXlsx(relatorio, resumo, totais);
+                            log("Arquivo XLSX gerado com sucesso.");
+                            alert("Relatório gerado! Verifique o arquivo Relatorio_NFe.xlsx na pasta de downloads.");
+                        } catch (erro2) {
+                            log("Erro ao gerar XLSX: " + erro2);
+                            alert("Erro ao gerar XLSX. Veja o log na tela.");
+                        }
+                    }
+                };
+
+                reader.onerror = function () {
+                    log("Erro de leitura no arquivo " + file.name);
+                    processados++;
+                };
+
+                reader.readAsText(file);
+            })(files[i]);
+        }
+    };
+
+    // Botão que baixa o ZIP do Google Drive
+    var btnDrive = document.getElementById("btnDrive");
+    if (btnDrive) {
+        btnDrive.onclick = function () {
+            var webAppUrl = "https://script.google.com/macros/s/AKfycbx4IhoMlB11778x4L-geD9KM-lsSdY0QMgmgR2lzMMZYkw74oo1xmXPi9l0dySgKWKI/exec";
+            window.open(webAppUrl, "_blank");
+        };
+    } else {
+        console.warn("Botão btnDrive não encontrado no HTML.");
+    }
+};
