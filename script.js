@@ -191,7 +191,7 @@ window.onload = function () {
     var btnDrive = document.getElementById("btnDrive");
     if (btnDrive) {
         btnDrive.onclick = function () {
-            var webAppUrl = "https://script.google.com/macros/s/AKfycbwHT700qJ8mBiq2KMtkgevo3T9AjtyFgdJ7N3IxJlGQydraOYdbKiEJmypDRto65PR8/exec";
+            var webAppUrl = "https://script.google.com/macros/s/AKfycbzC31h7Hf0nt8sjeetmhOkVm1IE_35FbnNPp1IFpIgliabWiOttInkHNTZtzmw-N6Fm/exec";
             window.open(webAppUrl, "_blank");
         };
     } else {
