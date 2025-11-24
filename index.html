@@ -7,7 +7,7 @@
 
     <!-- Favicon simples em SVG (MB) -->
     <link rel="icon" type="image/svg+xml"
-          href="data:image/svg+xml,%3Csvg width='64' height='64' viewBox='0 0 64 64' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%2338bdf8'/%3E%3Cstop offset='1' stop-color='%2322c55e'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='32' cy='32' r='30' fill='url(%23g)'/%3E%3Ctext x='32' y='38' text-anchor='middle' font-family='Poppins,Arial' font-size='20' font-weight='700' fill='%23010b19'%3EMB%3C/text%3E%3C/svg%3E" />
+          href="data:image/svg+xml,%3Csvg width='64' height='64' viewBox='0 0 64 64' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%2338bdf8'/%3E%3Cstop offset='100%25' stop-color='%2322c55e'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect rx='16' ry='16' width='64' height='64' fill='url(%23g)'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%23020c1b' fill-opacity='0.8'/%3E%3Ctext x='32' y='38' text-anchor='middle' font-family='system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' font-size='22' font-weight='700' fill='%23010b19'%3EMB%3C/text%3E%3C/svg%3E" />
 
     <!-- Fonte moderna -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -18,17 +18,20 @@
             --bg-body: radial-gradient(circle at top, #0f172a 0, #020617 55%, #000 100%);
             --bg-card: rgba(15, 23, 42, 0.98);
             --accent: #38bdf8;
+            --accent-soft: rgba(56, 189, 248, 0.16);
             --accent-strong: #22c55e;
             --text-main: #e5e7eb;
             --text-muted: #9ca3af;
-            --border-subtle: rgba(148, 163, 184, 0.25);
+            --border-subtle: rgba(148, 163, 184, 0.3);
         }
 
-        /* overrides do modo claro */
         html[data-theme="light"] {
-            --bg-body: radial-gradient(circle at top, #e5e7eb 0, #f9fafb 50%, #e5e7eb 100%);
-            --bg-card: #ffffff;
-            --text-main: #111827;
+            --bg-body: radial-gradient(circle at top, #e5f2ff 0, #f3f4f6 55%, #e5e7eb 100%);
+            --bg-card: rgba(248, 250, 252, 0.96);
+            --accent: #0ea5e9;
+            --accent-soft: rgba(14, 165, 233, 0.12);
+            --accent-strong: #22c55e;
+            --text-main: #020617;
             --text-muted: #6b7280;
             --border-subtle: rgba(148, 163, 184, 0.4);
         }
@@ -60,8 +63,8 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 12px;
-            margin-bottom: 16px;
+            gap: 8px;
+            margin-bottom: 18px;
         }
 
         .brand-row {
@@ -71,43 +74,70 @@
         }
 
         .brand-icon {
-            width: 38px;
-            height: 38px;
+            width: 42px;
+            height: 42px;
             border-radius: 999px;
-            background: conic-gradient(from 160deg, #22c55e, #38bdf8, #6366f1, #22c55e);
-            display: flex;
+            background: radial-gradient(circle at 30% 0, #38bdf8, #0f172a 60%);
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 0 18px rgba(56, 189, 248, 0.7);
+            box-shadow:
+                    0 12px 30px rgba(15, 23, 42, 0.9),
+                    0 0 0 1px rgba(148, 163, 184, 0.6);
         }
 
         .brand-icon span {
-            font-size: 15px;
+            font-size: 16px;
             font-weight: 700;
-            color: #0b1120;
-            text-transform: uppercase;
+            color: #e5e7eb;
+        }
+
+        .brand-text {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
         }
 
         .brand-title {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 600;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.06em;
         }
 
         .by-author {
             font-size: 12px;
-            font-style: italic;
-            margin-top: -4px;
             color: var(--text-muted);
         }
 
-        /* Botão de tema */
+        .top-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .mode-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 10px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            font-size: 11px;
+        }
+
+        .mode-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: #22c55e;
+        }
 
         .theme-toggle {
+            padding: 5px 10px;
             border-radius: 999px;
-            padding: 6px 12px;
-            border: 1px solid var(--border-subtle);
-            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            background: rgba(15, 23, 42, 0.9);
             color: var(--text-main);
             font-size: 11px;
             cursor: pointer;
@@ -140,127 +170,104 @@
         }
 
         html[data-theme="light"] .nav-tabs {
-            background: rgba(243, 244, 246, 0.9);
+            background: rgba(248, 250, 252, 0.96);
         }
 
         .nav-tab {
-            border: none;
+            font-size: 11px;
             border-radius: 999px;
             padding: 4px 10px;
-            font-size: 11px;
-            cursor: pointer;
-            color: var(--text-muted);
+            border: none;
             background: transparent;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
+            color: var(--text-muted);
+            cursor: pointer;
         }
 
         .nav-tab.active {
-            background: radial-gradient(circle at top left, var(--accent), var(--accent-strong));
-            color: #020617;
+            background: var(--accent-soft);
+            color: var(--accent-strong);
             font-weight: 600;
-        }
-
-        .nav-pill-badge {
-            font-size: 9px;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            padding: 1px 5px;
-            border-radius: 999px;
-            border: 1px solid rgba(248, 250, 252, 0.6);
-            background: rgba(15, 23, 42, 0.15);
         }
 
         /* MAIN CARD */
 
         .card-main {
-            background: var(--bg-card);
-            border-radius: 18px;
-            border: 1px solid var(--border-subtle);
+            background: radial-gradient(circle at top left,
+            rgba(15, 23, 42, 0.96),
+            rgba(15, 23, 42, 0.98));
+            border-radius: 24px;
+            padding: 22px 22px 24px;
+            border: 1px solid rgba(148, 163, 184, 0.28);
             box-shadow:
-                0 24px 60px rgba(15, 23, 42, 0.9),
-                0 0 0 1px rgba(15, 23, 42, 0.9);
-            padding: 22px 22px 18px;
-            position: relative;
-            overflow: hidden;
+                    0 28px 80px rgba(15, 23, 42, 0.85),
+                    0 0 0 1px rgba(15, 23, 42, 0.9);
         }
 
-        .card-main::before {
-            content: "";
-            position: absolute;
-            inset: -40%;
-            background:
-                radial-gradient(circle at top left, rgba(56, 189, 248, 0.23), transparent 60%),
-                radial-gradient(circle at bottom right, rgba(34, 197, 94, 0.2), transparent 55%);
-            opacity: 0.7;
-            z-index: -1;
+        html[data-theme="light"] .card-main {
+            background: rgba(248, 250, 252, 0.98);
+            box-shadow:
+                    0 22px 60px rgba(15, 23, 42, 0.16),
+                    0 0 0 1px rgba(148, 163, 184, 0.25);
         }
 
-        h1 {
-            font-size: 22px;
-            margin: 0 0 6px;
+        .card-main h1 {
+            font-size: 20px;
+            margin: 0 0 4px;
         }
 
         .subtitle {
             font-size: 13px;
             color: var(--text-muted);
-            margin-bottom: 16px;
+            margin-bottom: 18px;
         }
-
-        /* GRID */
 
         .grid {
             display: grid;
-            grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+            grid-template-columns: 1.2fr 1fr;
             gap: 18px;
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 780px) {
             .grid {
                 grid-template-columns: 1fr;
             }
         }
 
-        /* CARDS SIMPLES */
-
         .card {
-            background: rgba(15, 23, 42, 0.92);
-            border-radius: 14px;
-            border: 1px solid var(--border-subtle);
-            padding: 16px;
+            background: rgba(15, 23, 42, 0.98);
+            border-radius: 18px;
+            padding: 16px 16px 14px;
+            border: 1px solid rgba(148, 163, 184, 0.4);
         }
 
         html[data-theme="light"] .card {
-            background: rgba(248, 250, 252, 0.96);
+            background: rgba(249, 250, 251, 0.98);
         }
 
         .card-title {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             margin-bottom: 6px;
         }
 
         .hint {
-            font-size: 11px;
+            margin: 0 0 10px;
+            font-size: 12px;
             color: var(--text-muted);
+        }
+
+        /* INPUT DE ARQUIVO */
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
             margin-bottom: 8px;
         }
 
-        /* FILE INPUT */
-
         input[type="file"] {
-            width: 100%;
-            padding: 9px 10px;
-            border-radius: 10px;
-            border: 1px solid rgba(148, 163, 184, 0.5);
-            background: rgba(15, 23, 42, 0.9);
-            color: var(--text-main);
-            font-size: 13px;
-        }
-
-        html[data-theme="light"] input[type="file"] {
-            background: #f9fafb;
+            font-size: 12px;
+            color: var(--text-muted);
         }
 
         input[type="file"]::file-selector-button {
@@ -288,40 +295,39 @@
             font-weight: 600;
             cursor: pointer;
             box-shadow:
-                0 14px 30px rgba(56, 189, 248, 0.25),
-                0 0 0 1px rgba(15, 23, 42, 0.9);
+                    0 14px 30px rgba(56, 189, 248, 0.25),
+                    0 0 0 1px rgba(15, 23, 42, 0.9);
         }
 
         /* LOG BOX */
 
         .log-box {
-            background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.98), #020617);
-            border-radius: 10px;
-            border: 1px solid rgba(30, 64, 175, 0.8);
-            padding: 10px;
+            border-radius: 14px;
+            background: rgba(15, 23, 42, 0.98);
+            border: 1px solid rgba(148, 163, 184, 0.55);
+            padding: 10px 12px;
+            font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
             font-size: 11px;
-            height: 170px;
+            height: 150px;
             overflow-y: auto;
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            white-space: pre-wrap;
         }
 
         html[data-theme="light"] .log-box {
-            background: #020617;
+            background: rgba(15, 23, 42, 0.96);
             color: #e5e7eb;
         }
 
-        /* FUTURAS FUNCIONALIDADES */
+        /* EM DESENVOLVIMENTO */
 
         .dev-section {
-            margin-top: 20px;
-            background: rgba(56, 189, 248, 0.06);
-            border: 1px dashed rgba(56, 189, 248, 0.5);
-            border-radius: 12px;
-            padding: 12px 14px;
+            margin-top: 18px;
+            padding-top: 14px;
+            border-top: 1px dashed rgba(148, 163, 184, 0.6);
         }
 
         .dev-title {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
             color: var(--accent);
             margin-bottom: 4px;
@@ -350,11 +356,115 @@
         html[data-theme="light"] .dev-tag {
             background: rgba(248, 250, 252, 0.96);
         }
+
+        /* CTA BAIXAR XML DO GOOGLE DRIVE */
+        .drive-cta {
+            margin-top: 28px;
+            padding: 2px;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #0ea5e9, #22c55e, #a855f7);
+            box-shadow:
+                    0 22px 50px rgba(34, 197, 94, 0.22),
+                    0 0 0 1px rgba(15, 23, 42, 0.85);
+        }
+
+        .drive-cta-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 24px;
+            padding: 14px 24px;
+            border-radius: 999px;
+            background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.96));
+        }
+
+        .drive-cta-text {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 0;
+        }
+
+        .drive-cta-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: rgba(148, 163, 184, 0.9);
+        }
+
+        .drive-cta-title {
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .drive-cta-subtitle {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .drive-cta-button {
+            border: none;
+            border-radius: 999px;
+            padding: 9px 20px;
+            background: rgba(15, 23, 42, 0.9);
+            color: #ecfeff;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow:
+                    0 12px 35px rgba(34, 197, 94, 0.35),
+                    0 0 0 1px rgba(15, 23, 42, 0.95);
+            transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+        }
+
+        .drive-cta-button:hover {
+            transform: translateY(-1px);
+            background: rgba(15, 23, 42, 0.98);
+            box-shadow:
+                    0 16px 40px rgba(34, 197, 94, 0.45),
+                    0 0 0 1px rgba(15, 23, 42, 0.95);
+        }
+
+        .drive-cta-icon {
+            width: 18px;
+            height: 18px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            background: linear-gradient(135deg, #0ea5e9, #22c55e);
+            color: #020617;
+        }
+
+        @media (max-width: 720px) {
+            .drive-cta-inner {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .drive-cta-button {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        html[data-theme="light"] .drive-cta-inner {
+            background: radial-gradient(circle at top left, #f9fafb, #e5e7eb);
+        }
+
+        html[data-theme="light"] .drive-cta-button {
+            background: #020617;
+            color: #ecfeff;
+        }
     </style>
 
     <!-- Biblioteca XLSX -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <!-- Lógica principal (já está no script.js do repositório) -->
+    <!-- Lógica principal -->
     <script src="script.js" defer></script>
 </head>
 
@@ -365,29 +475,28 @@
     <div class="top-bar">
         <div class="brand-row">
             <div class="brand-icon"><span>MB</span></div>
-            <div>
+            <div class="brand-text">
                 <div class="brand-title">LOGÍSTICA MBLOG</div>
                 <div class="by-author">by Paulo Corrêa</div>
+
                 <div class="nav-tabs">
-                    <button class="nav-tab active">
-                        Processador NF-e
-                    </button>
-                    <button class="nav-tab" disabled>
-                        Dashboard
-                        <span class="nav-pill-badge">em dev</span>
-                    </button>
-                    <button class="nav-tab" disabled>
-                        Ferramentas extras
-                        <span class="nav-pill-badge">em dev</span>
-                    </button>
+                    <button class="nav-tab active">Processador NF-e</button>
+                    <button class="nav-tab">Dashboard (EM DEV)</button>
+                    <button class="nav-tab">Ferramentas extras (EM DEV)</button>
                 </div>
             </div>
         </div>
 
-        <button id="themeToggle" class="theme-toggle" type="button">
-            <span class="theme-dot"></span>
-            <span class="theme-label">Modo escuro</span>
-        </button>
+        <div class="top-right">
+            <div class="mode-indicator">
+                <span class="mode-dot"></span>
+                <span>Modo escuro</span>
+            </div>
+            <button id="themeToggle" class="theme-toggle">
+                <span class="theme-dot"></span>
+                <span class="theme-label">Modo escuro</span>
+            </button>
+        </div>
     </div>
 
     <!-- MAIN CARD -->
@@ -434,6 +543,23 @@
                 <span class="dev-tag">Consulta rápida de CNPJ</span>
             </div>
         </div>
+
+        <!-- CTA Download XML do Google Drive -->
+        <div class="drive-cta">
+            <div class="drive-cta-inner">
+                <div class="drive-cta-text">
+                    <div class="drive-cta-label">Fluxo automático</div>
+                    <div class="drive-cta-title">Baixe seus XML direto do Google Drive</div>
+                    <div class="drive-cta-subtitle">
+                        E-mails → Drive → Download em um clique. Ideal para centralizar o recebimento de NF-e.
+                    </div>
+                </div>
+                <button id="btnDrive" class="drive-cta-button">
+                    <span class="drive-cta-icon">☁</span>
+                    <span>Baixar XML do Google Drive</span>
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -466,6 +592,3 @@
 
 </body>
 </html>
-<button id="btnDrive" class="btn-primary" style="margin-top:10px;">
-    Baixar XML do Google Drive
-</button>
