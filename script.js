@@ -1,200 +1,143 @@
 function log(msg) {
-    var logEl = document.getElementById("log");
-    if (!logEl) return;
+    const logEl = document.getElementById("log");
     logEl.textContent += msg + "\n";
 }
 
 function limparLog() {
-    var logEl = document.getElementById("log");
-    if (logEl) logEl.textContent = "";
+    document.getElementById("log").textContent = "";
 }
 
-function getText(parent, tagName) {
+function getText(parent, tag) {
     if (!parent) return "";
-    var els = parent.getElementsByTagName(tagName);
-    if (!els || !els.length) return "";
-    var t = els[0].textContent || "";
-    return t.replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
+    const el = parent.getElementsByTagName(tag)[0];
+    return el ? el.textContent.trim() : "";
 }
 
-function adicionarAoResumo(resumo, codProd, nomeProd, unidade, qtd) {
-    var chave = codProd + "|" + unidade;
-    if (resumo[chave]) {
-        resumo[chave].quantidade += qtd;
-    } else {
-        resumo[chave] = {
-            codProd: codProd,
-            nomeProd: nomeProd,
-            unidade: unidade,
-            quantidade: qtd
-        };
-    }
+function adicionarAoResumo(resumo, cod, nome, un, qtd) {
+    const key = cod + "|" + un;
+    if (!resumo[key]) resumo[key] = { cod, nome, un, qtd: 0 };
+    resumo[key].qtd += qtd;
 }
 
-function processarXml(xmlTexto, nomeArquivo, relatorio, resumo, totais) {
-    var parser = new DOMParser();
-    var doc = parser.parseFromString(xmlTexto, "application/xml");
+function processarXml(xml, nome, relatorio, resumo, tot) {
+    try {
+        const doc = new DOMParser().parseFromString(xml, "text/xml");
+        const inf = doc.getElementsByTagName("infNFe")[0];
+        if (!inf) return log("Erro: infNFe não encontrado em " + nome);
 
-    var inf = doc.getElementsByTagName("infNFe")[0];
-    if (!inf) {
-        log("infNFe não encontrado em " + nomeArquivo);
-        return;
-    }
+        const ide = inf.getElementsByTagName("ide")[0];
+        const num = getText(ide, "nNF");
 
-    var ide = inf.getElementsByTagName("ide")[0];
-    var numero = getText(ide, "nNF");
+        const dest = inf.getElementsByTagName("dest")[0];
+        const nomeDest = dest ? getText(dest, "xNome") : "";
 
-    var volumes = 0;
-    var peso = 0;
+        const end = dest ? dest.getElementsByTagName("enderDest")[0] : null;
+        const endereco = end ? `${getText(end, "xLgr")}, ${getText(end, "nro")}` : "";
+        const cidade = end ? getText(end, "xMun") : "";
 
-    var transp = inf.getElementsByTagName("transp")[0];
-    if (transp) {
-        var vol = transp.getElementsByTagName("vol")[0];
-        if (vol) {
-            var qVolStr = getText(vol, "qVol").replace(",", ".");
-            var pesoStr = getText(vol, "pesoB").replace(",", ".");
-            volumes = qVolStr ? parseFloat(qVolStr) : 0;
-            peso = pesoStr ? parseFloat(pesoStr) : 0;
+        let volumes = 0, peso = 0;
+        const transp = inf.getElementsByTagName("transp")[0];
+        if (transp) {
+            const vol = transp.getElementsByTagName("vol")[0];
+            if (vol) {
+                volumes = parseFloat(getText(vol, "qVol").replace(",", ".")) || 0;
+                peso = parseFloat(getText(vol, "pesoB").replace(",", ".")) || 0;
+            }
         }
-    }
 
-    var dest = inf.getElementsByTagName("dest")[0];
-    var nomeDest = dest ? getText(dest, "xNome") : "";
-    var endereco = "";
-    var cidade = "";
+        relatorio.push([num, volumes, peso, nomeDest, endereco, cidade]);
 
-    if (dest) {
-        var end = dest.getElementsByTagName("enderDest")[0];
-        if (end) {
-            endereco = getText(end, "xLgr") + ", " + getText(end, "nro");
-            cidade = getText(end, "xMun");
+        tot.notas++;
+        tot.volumes += volumes;
+        tot.peso += peso;
+
+        const dets = inf.getElementsByTagName("det");
+        for (let d of dets) {
+            const prod = d.getElementsByTagName("prod")[0];
+            if (!prod) continue;
+            adicionarAoResumo(
+                resumo,
+                getText(prod, "cProd"),
+                getText(prod, "xProd"),
+                getText(prod, "uCom"),
+                parseFloat(getText(prod, "qCom").replace(",", ".")) || 0
+            );
         }
+
+        log("OK: " + nome);
+    } catch (e) {
+        log("Erro processando " + nome + ": " + e);
     }
-
-    relatorio.push([numero, volumes, peso, nomeDest, endereco, cidade]);
-
-    totais.totalNotas += 1;
-    totais.totalVolumes += volumes;
-    totais.totalPeso += peso;
-
-    var dets = inf.getElementsByTagName("det");
-    for (var i = 0; i < dets.length; i++) {
-        var prod = dets[i].getElementsByTagName("prod")[0];
-        if (!prod) continue;
-
-        var cod = getText(prod, "cProd");
-        var nomeProd = getText(prod, "xProd");
-        var un = getText(prod, "uCom");
-        var qStr = getText(prod, "qCom").replace(",", ".");
-        var q = qStr ? parseFloat(qStr) : 0;
-
-        adicionarAoResumo(resumo, cod, nomeProd, un, q);
-    }
-
-    log("OK: " + nomeArquivo);
 }
 
-function gerarXlsx(relatorio, resumo, totais) {
-    // linhas de total
+function gerar(relatorio, resumo, tot) {
     relatorio.push([]);
-    relatorio.push(["TOTAL DE NOTAS:", totais.totalNotas]);
-    relatorio.push(["TOTAL DE VOLUMES:", totais.totalVolumes]);
-    relatorio.push(["TOTAL DE PESO:", totais.totalPeso]);
+    relatorio.push(["TOTAL NOTAS", tot.notas]);
+    relatorio.push(["TOTAL VOLUMES", tot.volumes]);
+    relatorio.push(["TOTAL PESO", tot.peso]);
 
-    // resumo
-    var resumoArr = [["Código", "Produto", "Unidade", "Quantidade"]];
-    for (var chave in resumo) {
-        if (!resumo.hasOwnProperty(chave)) continue;
-        var item = resumo[chave];
-        resumoArr.push([item.codProd, item.nomeProd, item.unidade, item.quantidade]);
-    }
+    const resumoArr = [["Código", "Produto", "Un", "Quantidade"]];
+    for (let k in resumo) resumoArr.push(Object.values(resumo[k]));
 
-    var wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(relatorio), "Relatorio");
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(resumoArr), "ResumoProduto");
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(relatorio), "Relatório");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(resumoArr), "Produtos");
 
     XLSX.writeFile(wb, "Relatorio_NFe.xlsx");
 }
 
-window.onload = function () {
-    var btn = document.getElementById("btnProcessar");
-    var input = document.getElementById("xmlFiles");
+async function lerZIP(file, callback) {
+    const JSZip = await import("https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js");
+    log("Lendo ZIP...");
+    const zip = await JSZip.loadAsync(file);
 
-    if (!btn || !input) {
-        console.error("Elementos não encontrados no DOM.");
-        return;
+    for (let filename in zip.files) {
+        if (filename.endsWith(".xml")) {
+            const xml = await zip.files[filename].async("text");
+            callback(xml, filename);
+        }
     }
+}
 
-    // Botão que processa arquivos locais
-    btn.onclick = function () {
+window.onload = () => {
+    const btn = document.getElementById("btnProcessar");
+    const input = document.getElementById("xmlFiles");
+
+    btn.onclick = async () => {
         limparLog();
-        log("Botão clicado.");
+        if (!input.files.length) return alert("Selecione arquivos XML ou ZIP!");
 
-        if (typeof XLSX === "undefined") {
-            log("Erro: XLSX não carregou.");
-            alert("Erro: biblioteca XLSX não carregou. Verifique a conexão e recarregue a página.");
-            return;
+        log("Processando arquivos...");
+
+        const relatorio = [["Nota", "Volumes", "Peso", "Destinatário", "Endereço", "Cidade"]];
+        const resumo = {};
+        const tot = { notas: 0, volumes: 0, peso: 0 };
+
+        let count = 0, total = input.files.length;
+
+        for (let file of input.files) {
+            if (file.name.endsWith(".zip")) {
+                await lerZIP(file, (xml, nome) => {
+                    processarXml(xml, nome, relatorio, resumo, tot);
+                });
+                count++;
+                continue;
+            }
+
+            const txt = await file.text();
+            processarXml(txt, file.name, relatorio, resumo, tot);
+            count++;
         }
 
-        var files = input.files;
-        if (!files || !files.length) {
-            log("Nenhum XML selecionado.");
-            alert("Selecione pelo menos um arquivo XML.");
-            return;
-        }
-
-        log("Arquivos selecionados: " + files.length);
-
-        var relatorio = [["Nota", "Volumes", "Peso", "Destinatário", "Endereço", "Cidade"]];
-        var resumo = {};
-        var totais = { totalNotas: 0, totalVolumes: 0, totalPeso: 0 };
-
-        var totalArquivos = files.length;
-        var processados = 0;
-
-        for (var i = 0; i < files.length; i++) {
-            (function (file) {
-                var reader = new FileReader();
-
-                reader.onload = function (e) {
-                    try {
-                        processarXml(e.target.result, file.name, relatorio, resumo, totais);
-                    } catch (erro) {
-                        log("Erro ao processar " + file.name + ": " + erro);
-                    }
-                    processados++;
-
-                    if (processados === totalArquivos) {
-                        log("Todos os arquivos processados. Gerando XLSX...");
-                        try {
-                            gerarXlsx(relatorio, resumo, totais);
-                            log("Arquivo XLSX gerado com sucesso.");
-                            alert("Relatório gerado! Verifique o arquivo Relatorio_NFe.xlsx na pasta de downloads.");
-                        } catch (erro2) {
-                            log("Erro ao gerar XLSX: " + erro2);
-                            alert("Erro ao gerar XLSX. Veja o log na tela.");
-                        }
-                    }
-                };
-
-                reader.onerror = function () {
-                    log("Erro de leitura no arquivo " + file.name);
-                    processados++;
-                };
-
-                reader.readAsText(file);
-            })(files[i]);
+        if (count === total) {
+            log("Gerando XLSX...");
+            gerar(relatorio, resumo, tot);
         }
     };
 
-    // Botão que abre o painel para baixar XML do Google Drive
-    var btnDrive = document.getElementById("btnDrive");
-    if (btnDrive) {
-        btnDrive.onclick = function () {
-            var webAppUrl = "https://script.google.com/macros/s/AKfycbzC31h7Hf0nt8sjeetmhOkVm1IE_35FbnNPp1IFpIgliabWiOttInkHNTZtzmw-N6Fm/exec";
-            window.open(webAppUrl, "_blank");
-        };
-    } else {
-        console.warn("Botão btnDrive não encontrado no HTML.");
-    }
+    document.getElementById("btnDrive").onclick = () => {
+        const url = "https://drive.google.com/drive/folders/1geD-SwS98xzSWnxYcF3zCTrlz21ZG5WL";
+        log("Abrindo pasta 'Coletor XML' no Drive...");
+        window.open(url, "_blank");
+    };
 };
