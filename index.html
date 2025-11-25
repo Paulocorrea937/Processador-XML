@@ -5,16 +5,21 @@
     <title>Logística MBLOG • Processador NF-e</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- Favicon simples em SVG (MB) -->
+    <!-- Favicon -->
     <link rel="icon" type="image/svg+xml"
-          href="data:image/svg+xml,%3Csvg width='64' height='64' viewBox='0 0 64 64' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%2338bdf8'/%3E%3Cstop offset='100%25' stop-color='%2322c55e'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect rx='16' ry='16' width='64' height='64' fill='url(%23g)'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%23020c1b' fill-opacity='0.8'/%3E%3Ctext x='32' y='38' text-anchor='middle' font-family='system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' font-size='22' font-weight='700' fill='%23010b19'%3EMB%3C/text%3E%3C/svg%3E" />
+          href="data:image/svg+xml,%3Csvg width='64' height='64' viewBox='0 0 64 64' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%2338bdf8'/%3E%3Cstop offset='100%25' stop-color='%2322c55e'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect rx='16' ry='16' width='64' height='64' fill='url(%23g)'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%23020c1b' fill-opacity='0.8'/%3E%3Ctext x='32' y='38' text-anchor='middle' font-family='system-ui' font-size='22' font-weight='700' fill='%23010b19'%3EMB%3C/text%3E%3C/svg%3E" />
 
-    <!-- Fonte moderna -->
+    <!-- Fonte -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Biblioteca XLSX -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <!-- Script principal -->
+    <script src="script.js" defer></script>
 
     <style>
         :root {
-            /* tema escuro padrão */
             --bg-body: radial-gradient(circle at top, #0f172a 0, #020617 55%, #000 100%);
             --bg-card: rgba(15, 23, 42, 0.98);
             --accent: #38bdf8;
@@ -36,14 +41,10 @@
             --border-subtle: rgba(148, 163, 184, 0.4);
         }
 
-        * {
-            box-sizing: border-box;
-        }
-
         body {
             margin: 0;
             min-height: 100vh;
-            font-family: "Poppins", system-ui, -apple-system, "Segoe UI", sans-serif;
+            font-family: "Poppins", sans-serif;
             background: var(--bg-body);
             color: var(--text-main);
             display: flex;
@@ -57,428 +58,92 @@
             max-width: 980px;
         }
 
-        /* TOP BAR + BRAND */
-
         .top-bar {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 8px;
             margin-bottom: 18px;
         }
 
-        .brand-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
+        .brand-row { display: flex; gap: 12px; align-items: center; }
         .brand-icon {
-            width: 42px;
-            height: 42px;
+            width: 42px; height: 42px;
             border-radius: 999px;
             background: radial-gradient(circle at 30% 0, #38bdf8, #0f172a 60%);
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow:
-                    0 12px 30px rgba(15, 23, 42, 0.9),
-                    0 0 0 1px rgba(148, 163, 184, 0.6);
+            display: flex; align-items: center; justify-content: center;
         }
 
-        .brand-icon span {
-            font-size: 16px;
-            font-weight: 700;
-            color: #e5e7eb;
-        }
+        .brand-title { font-size: 18px; font-weight: 600; }
+        .by-author { font-size: 12px; color: var(--text-muted); }
 
-        .brand-text {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-
-        .brand-title {
-            font-size: 18px;
-            font-weight: 600;
-            letter-spacing: 0.06em;
-        }
-
-        .by-author {
-            font-size: 12px;
-            color: var(--text-muted);
-        }
-
-        .top-right {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .mode-indicator {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 5px 10px;
+        .nav-tabs { 
+            margin-top: 4px; display: inline-flex; gap: 6px; padding: 4px;
             border-radius: 999px;
-            background: rgba(15, 23, 42, 0.8);
-            border: 1px solid rgba(148, 163, 184, 0.4);
-            font-size: 11px;
+            background: rgba(15,23,42,0.7);
+            border: 1px solid rgba(148,163,184,0.35);
         }
-
-        .mode-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 999px;
-            background: #22c55e;
-        }
-
-        .theme-toggle {
-            padding: 5px 10px;
-            border-radius: 999px;
-            border: 1px solid rgba(148, 163, 184, 0.4);
-            background: rgba(15, 23, 42, 0.9);
-            color: var(--text-main);
-            font-size: 11px;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        html[data-theme="light"] .theme-toggle {
-            background: #f9fafb;
-        }
-
-        .theme-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 999px;
-            background: #22c55e;
-        }
-
-        /* NAV TABS */
-
-        .nav-tabs {
-            display: inline-flex;
-            gap: 6px;
-            padding: 4px;
-            border-radius: 999px;
-            background: rgba(15, 23, 42, 0.7);
-            border: 1px solid rgba(148, 163, 184, 0.35);
-            margin-top: 4px;
-        }
-
-        html[data-theme="light"] .nav-tabs {
-            background: rgba(248, 250, 252, 0.96);
-        }
-
-        .nav-tab {
-            font-size: 11px;
-            border-radius: 999px;
-            padding: 4px 10px;
-            border: none;
-            background: transparent;
-            color: var(--text-muted);
-            cursor: pointer;
-        }
-
-        .nav-tab.active {
-            background: var(--accent-soft);
-            color: var(--accent-strong);
-            font-weight: 600;
-        }
-
-        /* MAIN CARD */
+        .nav-tab { padding: 4px 10px; background: transparent; border: none; font-size: 11px;}
+        .nav-tab.active { background: var(--accent-soft); color: var(--accent-strong); font-weight: 600; }
 
         .card-main {
             background: radial-gradient(circle at top left,
             rgba(15, 23, 42, 0.96),
             rgba(15, 23, 42, 0.98));
             border-radius: 24px;
-            padding: 22px 22px 24px;
+            padding: 22px;
             border: 1px solid rgba(148, 163, 184, 0.28);
-            box-shadow:
-                    0 28px 80px rgba(15, 23, 42, 0.85),
-                    0 0 0 1px rgba(15, 23, 42, 0.9);
         }
 
-        html[data-theme="light"] .card-main {
-            background: rgba(248, 250, 252, 0.98);
-            box-shadow:
-                    0 22px 60px rgba(15, 23, 42, 0.16),
-                    0 0 0 1px rgba(148, 163, 184, 0.25);
-        }
+        .grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 18px; }
+        @media (max-width: 780px) { .grid { grid-template-columns: 1fr; } }
 
-        .card-main h1 {
-            font-size: 20px;
-            margin: 0 0 4px;
-        }
-
-        .subtitle {
-            font-size: 13px;
-            color: var(--text-muted);
-            margin-bottom: 18px;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: 1.2fr 1fr;
-            gap: 18px;
-        }
-
-        @media (max-width: 780px) {
-            .grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .card {
-            background: rgba(15, 23, 42, 0.98);
-            border-radius: 18px;
-            padding: 16px 16px 14px;
-            border: 1px solid rgba(148, 163, 184, 0.4);
-        }
-
-        html[data-theme="light"] .card {
-            background: rgba(249, 250, 251, 0.98);
-        }
-
-        .card-title {
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 6px;
-        }
-
-        .hint {
-            margin: 0 0 10px;
-            font-size: 12px;
-            color: var(--text-muted);
-        }
-
-        /* INPUT DE ARQUIVO */
-
-        .file-input-wrapper {
-            position: relative;
-            display: inline-flex;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-
-        input[type="file"] {
-            font-size: 12px;
-            color: var(--text-muted);
-        }
-
-        input[type="file"]::file-selector-button {
-            padding: 6px 12px;
-            border-radius: 999px;
-            border: none;
-            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
-            color: #0b1120;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        /* BUTTON PROCESSAR */
-
-        .btn-primary {
-            margin-top: 12px;
-            padding: 10px 16px;
-            width: 100%;
-            border-radius: 999px;
-            border: none;
-            background: radial-gradient(circle at top left, var(--accent), var(--accent-strong));
-            color: #020617;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            box-shadow:
-                    0 14px 30px rgba(56, 189, 248, 0.25),
-                    0 0 0 1px rgba(15, 23, 42, 0.9);
-        }
-
-        /* LOG BOX */
+        .card { background: var(--bg-card); border-radius: 18px; padding: 16px; }
+        .card-title { font-size: 14px; font-weight: 600; }
 
         .log-box {
             border-radius: 14px;
-            background: rgba(15, 23, 42, 0.98);
-            border: 1px solid rgba(148, 163, 184, 0.55);
-            padding: 10px 12px;
-            font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-            font-size: 11px;
-            height: 150px;
-            overflow-y: auto;
+            padding: 10px;
+            background: rgba(15,23,42,0.96);
+            border: 1px solid rgba(148,163,184,0.45);
+            height: 160px;
+            font-size: 12px;
             white-space: pre-wrap;
+            overflow-y: auto;
         }
 
-        html[data-theme="light"] .log-box {
-            background: rgba(15, 23, 42, 0.96);
-            color: #e5e7eb;
-        }
-
-        /* EM DESENVOLVIMENTO */
-
-        .dev-section {
-            margin-top: 18px;
-            padding-top: 14px;
-            border-top: 1px dashed rgba(148, 163, 184, 0.6);
-        }
-
-        .dev-title {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--accent);
-            margin-bottom: 4px;
-        }
-
-        .dev-text {
-            font-size: 12px;
-            color: var(--text-muted);
-        }
-
-        .dev-tags {
-            margin-top: 6px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-        }
-
-        .dev-tag {
-            font-size: 11px;
-            padding: 3px 8px;
-            border-radius: 999px;
-            border: 1px solid rgba(148, 163, 184, 0.5);
-            background: rgba(15, 23, 42, 0.95);
-        }
-
-        html[data-theme="light"] .dev-tag {
-            background: rgba(248, 250, 252, 0.96);
-        }
-
-        /* CTA BAIXAR XML DO GOOGLE DRIVE */
-        .drive-cta {
-            margin-top: 28px;
-            padding: 2px;
-            border-radius: 999px;
-            background: linear-gradient(90deg, #0ea5e9, #22c55e, #a855f7);
-            box-shadow:
-                    0 22px 50px rgba(34, 197, 94, 0.22),
-                    0 0 0 1px rgba(15, 23, 42, 0.85);
-        }
+        /* BOTÃO DRIVE */
+        .drive-cta { margin-top: 30px; padding: 2px; border-radius: 18px;
+            background: linear-gradient(90deg,#0ea5e9,#22c55e,#a855f7); }
 
         .drive-cta-inner {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 24px;
-            padding: 14px 24px;
-            border-radius: 999px;
-            background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.96));
+            padding: 18px; border-radius: 18px; display: flex;
+            justify-content: space-between; align-items: center;
+            background: rgba(15,23,42,0.96);
         }
 
-        .drive-cta-text {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            min-width: 0;
-        }
-
-        .drive-cta-label {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            color: rgba(148, 163, 184, 0.9);
-        }
-
-        .drive-cta-title {
-            font-size: 15px;
-            font-weight: 600;
-        }
-
-        .drive-cta-subtitle {
-            font-size: 12px;
-            color: var(--text-muted);
-        }
+        .drive-cta-title { font-size: 15px; font-weight: 600; }
+        .drive-cta-subtitle { font-size: 12px; color: var(--text-muted); }
 
         .drive-cta-button {
-            border: none;
+            padding: 10px 16px;
             border-radius: 999px;
-            padding: 9px 20px;
-            background: rgba(15, 23, 42, 0.9);
-            color: #ecfeff;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            box-shadow:
-                    0 12px 35px rgba(34, 197, 94, 0.35),
-                    0 0 0 1px rgba(15, 23, 42, 0.95);
-            transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
-        }
-
-        .drive-cta-button:hover {
-            transform: translateY(-1px);
-            background: rgba(15, 23, 42, 0.98);
-            box-shadow:
-                    0 16px 40px rgba(34, 197, 94, 0.45),
-                    0 0 0 1px rgba(15, 23, 42, 0.95);
-        }
-
-        .drive-cta-icon {
-            width: 18px;
-            height: 18px;
-            border-radius: 999px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 11px;
-            background: linear-gradient(135deg, #0ea5e9, #22c55e);
-            color: #020617;
-        }
-
-        @media (max-width: 720px) {
-            .drive-cta-inner {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .drive-cta-button {
-                width: 100%;
-                justify-content: center;
-            }
-        }
-
-        html[data-theme="light"] .drive-cta-inner {
-            background: radial-gradient(circle at top left, #f9fafb, #e5e7eb);
-        }
-
-        html[data-theme="light"] .drive-cta-button {
-            background: #020617;
-            color: #ecfeff;
+            color: #fff; border: none;
+            font-weight: 600; cursor: pointer;
+            background: rgba(34,197,94,0.25);
         }
     </style>
-
-    <!-- Biblioteca XLSX -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <!-- Lógica principal -->
-    <script src="script.js" defer></script>
 </head>
 
 <body>
 <div class="shell">
 
-    <!-- TOP BAR -->
+    <!-- TOPO -->
     <div class="top-bar">
         <div class="brand-row">
             <div class="brand-icon"><span>MB</span></div>
-            <div class="brand-text">
+            <div>
                 <div class="brand-title">LOGÍSTICA MBLOG</div>
                 <div class="by-author">by Paulo Corrêa</div>
-
                 <div class="nav-tabs">
                     <button class="nav-tab active">Processador NF-e</button>
                     <button class="nav-tab">Dashboard (EM DEV)</button>
@@ -486,109 +151,52 @@
                 </div>
             </div>
         </div>
-
-        <div class="top-right">
-            <div class="mode-indicator">
-                <span class="mode-dot"></span>
-                <span>Modo escuro</span>
-            </div>
-            <button id="themeToggle" class="theme-toggle">
-                <span class="theme-dot"></span>
-                <span class="theme-label">Modo escuro</span>
-            </button>
-        </div>
     </div>
 
-    <!-- MAIN CARD -->
+    <!-- CARD PRINCIPAL -->
     <div class="card-main">
         <h1>Processador XML NFe → XLSX</h1>
-        <div class="subtitle">
-            Selecione múltiplos XMLs de NF-e e gere automaticamente um relatório em Excel com resumo por nota e por produto.
-        </div>
+        <p class="subtitle">
+            Selecione XMLs ou um ZIP baixado do Google Drive para gerar relatórios automáticos.
+        </p>
 
         <div class="grid">
-            <!-- COLUNA ESQUERDA -->
+            <!-- Coluna esquerda -->
             <div class="card">
-                <div class="card-title">Importar arquivos XML</div>
-                <p class="hint">
-                    Aceita múltiplos arquivos de uma vez. Nenhum dado é enviado para servidor – tudo é processado localmente no seu navegador.
-                </p>
-                <input type="file" id="xmlFiles" accept=".xml" multiple="multiple">
-
-                <button id="btnProcessar" class="btn-primary">
+                <div class="card-title">Importar arquivos XML / ZIP</div>
+                <input type="file" id="xmlFiles" accept=".xml,.zip" multiple>
+                <button id="btnProcessar" class="drive-cta-button" style="margin-top:12px;width:100%;">
                     Processar XMLs e gerar XLSX
                 </button>
             </div>
 
-            <!-- COLUNA DIREITA -->
+            <!-- Coluna direita -->
             <div class="card">
                 <div class="card-title">Status / Log</div>
-                <div id="log" class="log-box">
-                    Aguardando processamento...
-                </div>
+                <div id="log" class="log-box">Aguardando processamento...</div>
             </div>
         </div>
 
-        <!-- FUTURAS FUNCIONALIDADES -->
-        <div class="dev-section">
-            <div class="dev-title">Em desenvolvimento</div>
-            <div class="dev-text">
-                Este espaço será usado para novas ferramentas da Logística MBLOG, como:
-            </div>
-            <div class="dev-tags">
-                <span class="dev-tag">Dashboard de volumes e peso</span>
-                <span class="dev-tag">Resumo por cliente / cidade</span>
-                <span class="dev-tag">Validador de XML NF-e</span>
-                <span class="dev-tag">Leitor de DANFE em PDF</span>
-                <span class="dev-tag">Consulta rápida de CNPJ</span>
-            </div>
-        </div>
-
-        <!-- CTA Download XML do Google Drive -->
+        <!-- CTA DRIVE -->
         <div class="drive-cta">
             <div class="drive-cta-inner">
-                <div class="drive-cta-text">
-                    <div class="drive-cta-label">Fluxo automático</div>
-                    <div class="drive-cta-title">Baixe seus XML direto do Google Drive</div>
+                <div>
+                    <div class="drive-cta-title">Abrir pasta "Coletor XML" no Google Drive</div>
                     <div class="drive-cta-subtitle">
-                        E-mails → Drive → Download em um clique. Ideal para centralizar o recebimento de NF-e.
+                        1) Os XML chegam por e-mail e são enviados para esta pasta.<br>
+                        2) Abra a pasta, selecione os arquivos e clique em <b>Fazer download</b>.<br>
+                        3) Volte ao topo e processe o ZIP normalmente.
                     </div>
                 </div>
+
                 <button id="btnDrive" class="drive-cta-button">
-                    <span class="drive-cta-icon">☁</span>
-                    <span>Baixar XML do Google Drive</span>
+                    Abrir pasta no Drive
                 </button>
             </div>
         </div>
+
     </div>
 </div>
-
-<!-- Script leve só para o modo claro/escuro -->
-<script>
-(function () {
-    var root = document.documentElement;
-    var btn = document.getElementById('themeToggle');
-    var label = btn.querySelector('.theme-label');
-
-    function applyTheme(theme) {
-        root.setAttribute('data-theme', theme);
-        label.textContent = theme === 'light' ? 'Modo claro' : 'Modo escuro';
-    }
-
-    var saved = localStorage.getItem('mblog-theme');
-    if (!saved) {
-        saved = 'dark';
-    }
-    applyTheme(saved);
-
-    btn.addEventListener('click', function () {
-        var current = root.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
-        var next = current === 'light' ? 'dark' : 'light';
-        applyTheme(next);
-        localStorage.setItem('mblog-theme', next);
-    });
-})();
-</script>
 
 </body>
 </html>
